@@ -34,6 +34,7 @@ type PodEntry struct {
 	PodName   string
 	Namespace string
 	NodeName  string
+	UID       string
 
 	EntryUpdateTime     time.Time
 	TracingStartTime    time.Time
@@ -186,10 +187,12 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 
 	// deleted pod
 	if deleted {
+
 		podEntry := &PodEntry{
 			PodName:             currentPod.Name,
 			Namespace:           currentPod.Namespace,
 			NodeName:            currentPod.Spec.NodeName,
+			UID:                 string(currentPod.UID),
 			EntryUpdateTime:     metav1.Now().UTC(),
 			TracingStartTime:    metav1.Now().UTC(),
 			TracingGracefulTime: time.Duration(s.gcConfig.AdditionalGraceDelay) * time.Second,
@@ -261,6 +264,7 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 				Namespace:        currentPod.Namespace,
 				NodeName:         currentPod.Spec.NodeName,
 				EntryUpdateTime:  metav1.Now().UTC(),
+				UID:              string(currentPod.UID),
 				TracingStartTime: currentPod.DeletionTimestamp.Time,
 				PodTracingReason: podStatus,
 			}
@@ -280,6 +284,7 @@ func (s *SpiderGC) buildPodEntry(oldPod, currentPod *corev1.Pod, deleted bool) (
 				PodName:          currentPod.Name,
 				Namespace:        currentPod.Namespace,
 				NodeName:         currentPod.Spec.NodeName,
+				UID:              string(currentPod.UID),
 				EntryUpdateTime:  metav1.Now().UTC(),
 				PodTracingReason: podStatus,
 			}
