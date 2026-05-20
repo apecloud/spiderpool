@@ -5,6 +5,7 @@ package common
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/spidernet-io/spiderpool/pkg/constant"
@@ -16,6 +17,7 @@ import (
 	"github.com/spidernet-io/spiderpool/pkg/types"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func GenerateExamplePodYaml(podName, namespace string) *corev1.Pod {
@@ -122,4 +124,22 @@ func CheckPodIpReadyByLabel(frame *e2e.Framework, label map[string]string, v4Poo
 	Expect(ok).To(BeTrue())
 	GinkgoWriter.Printf("Pod IP recorded in IPPool %v , %v \n", v4PoolNameList, v6PoolNameList)
 	return podList
+}
+
+func DeletePods(frame *e2e.Framework, opts ...client.DeleteAllOfOption) error {
+	return frame.KClient.DeleteAllOf(context.TODO(), &corev1.Pod{}, opts...)
+}
+
+func ValidatePodIPConflict(podList *corev1.PodList) error {
+	isIPConflictMap := make(map[string]string)
+	for _, pod := range podList.Items {
+		for _, ip := range pod.Status.PodIPs {
+			ipStr := ip.IP
+			if existingPod, ok := isIPConflictMap[ipStr]; ok {
+				return fmt.Errorf("the ip address: %v of pod %v conflicts with the ip address: %v of pod %v", ipStr, existingPod, ipStr, pod.Name)
+			}
+			isIPConflictMap[ipStr] = pod.Name
+		}
+	}
+	return nil
 }
